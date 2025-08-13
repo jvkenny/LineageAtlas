@@ -4,6 +4,8 @@ import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig({
+  // Base path for GitHub Pages deployment
+  base: "/LineageAtlas/",
   plugins: [
     react(),
     runtimeErrorOverlay(),
