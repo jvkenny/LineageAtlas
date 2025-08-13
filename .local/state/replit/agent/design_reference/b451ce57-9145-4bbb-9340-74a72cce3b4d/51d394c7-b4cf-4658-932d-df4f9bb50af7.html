@@ -1,0 +1,464 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legacy Atlas Studio - Family History Mapping</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        heritage: {
+                            50: '#f0f4f1',
+                            100: '#dbe7de',
+                            200: '#b8d0c0',
+                            300: '#8fb39a',
+                            400: '#679474',
+                            500: '#2C5530',
+                            600: '#254a2a',
+                            700: '#1e3e22',
+                            800: '#18321c',
+                            900: '#142917'
+                        },
+                        antique: {
+                            50: '#faf7f4',
+                            100: '#f5ede4',
+                            200: '#e8d5c4',
+                            300: '#d7b89d',
+                            400: '#c49570',
+                            500: '#8B4513',
+                            600: '#7d3e11',
+                            700: '#68320e',
+                            800: '#54290c',
+                            900: '#45220a'
+                        },
+                        vintage: {
+                            50: '#fefbf3',
+                            100: '#fdf4e1',
+                            200: '#fae7c2',
+                            300: '#f6d699',
+                            400: '#f1c070',
+                            500: '#D4AF37',
+                            600: '#c09d32',
+                            700: '#a1822a',
+                            800: '#836924',
+                            900: '#6c561f'
+                        }
+                    },
+                    fontFamily: {
+                        'serif': ['Crimson Text', 'serif'],
+                        'sans': ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- @COMPONENT: AppHeader -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-map-marked-alt text-heritage-500 text-2xl"></i>
+                        <h1 class="text-xl font-serif font-semibold text-heritage-800">Legacy Atlas Studio</h1>
+                    </div>
+                    <nav class="hidden md:flex space-x-6 ml-8">
+                        <button class="text-heritage-600 hover:text-heritage-800 font-medium border-b-2 border-heritage-500 pb-1">Map View</button>
+                        <button class="text-gray-500 hover:text-heritage-600 font-medium pb-1">Family Tree</button>
+                        <button class="text-gray-500 hover:text-heritage-600 font-medium pb-1">Timeline</button>
+                        <button class="text-gray-500 hover:text-heritage-600 font-medium pb-1">Stories</button>
+                    </nav>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="bg-heritage-500 hover:bg-heritage-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-download mr-2"></i>Export Atlas
+                    </button>
+                    <button class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-cog text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- @END_COMPONENT: AppHeader -->
+
+    <div class="flex h-screen bg-gray-50 pt-16">
+        <!-- @COMPONENT: Sidebar -->
+        <div class="w-80 bg-white shadow-lg border-r border-gray-200 flex flex-col">
+            <!-- Import Section -->
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-lg font-serif font-semibold text-heritage-800 mb-4">Import Family Data</h2>
+                <div class="space-y-3">
+                    <div class="border-2 border-dashed border-gray-300 hover:border-heritage-400 rounded-lg p-4 text-center cursor-pointer transition-colors" data-implementation="File upload with GEDCOM/CSV validation">
+                        <i class="fas fa-file-upload text-heritage-400 text-2xl mb-2"></i>
+                        <p class="text-sm text-gray-600">Drop GEDCOM or CSV files here</p>
+                        <p class="text-xs text-gray-400">or click to browse</p>
+                    </div>
+                    <div class="border-2 border-dashed border-gray-300 hover:border-heritage-400 rounded-lg p-4 text-center cursor-pointer transition-colors" data-implementation="Geopackage file processing with GDAL">
+                        <i class="fas fa-layer-group text-heritage-400 text-2xl mb-2"></i>
+                        <p class="text-sm text-gray-600">Add QGIS Geopackage (.gpkg)</p>
+                        <p class="text-xs text-gray-400">Vector and raster layers</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Family Summary -->
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-md font-serif font-semibold text-heritage-800 mb-3">Current Atlas</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Family Members:</span>
+                        <span class="font-medium" data-bind="familyStats.memberCount">247</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Locations:</span>
+                        <span class="font-medium" data-bind="familyStats.locationCount">89</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Time Span:</span>
+                        <span class="font-medium" data-bind="familyStats.timeSpan">1847-2024</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Stories Generated:</span>
+                        <span class="font-medium" data-bind="familyStats.storyCount">156</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Layers -->
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-md font-serif font-semibold text-heritage-800 mb-3">Map Layers</h3>
+                <div class="space-y-2">
+                    <label class="flex items-center">
+                        <input type="checkbox" checked class="rounded border-gray-300 text-heritage-600 focus:ring-heritage-500" data-layer="family-locations">
+                        <span class="ml-2 text-sm text-gray-700">Family Locations</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" checked class="rounded border-gray-300 text-heritage-600 focus:ring-heritage-500" data-layer="migration-paths">
+                        <span class="ml-2 text-sm text-gray-700">Migration Paths</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-heritage-600 focus:ring-heritage-500" data-layer="historical-maps">
+                        <span class="ml-2 text-sm text-gray-700">Historical Maps</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-heritage-600 focus:ring-heritage-500" data-layer="cemeteries">
+                        <span class="ml-2 text-sm text-gray-700">Cemeteries</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" checked class="rounded border-gray-300 text-heritage-600 focus:ring-heritage-500" data-layer="custom-geopackage">
+                        <span class="ml-2 text-sm text-gray-700">Custom Layers (GPKG)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="p-6 flex-1 overflow-y-auto">
+                <h3 class="text-md font-serif font-semibold text-heritage-800 mb-3">Recent Stories</h3>
+                <div class="space-y-3">
+                    <!-- @MAP: recentStories.map(story => ( -->
+                    <div class="bg-gray-50 rounded-lg p-3 cursor-pointer hover:bg-gray-100 transition-colors" data-mock="true">
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-map-pin text-heritage-500 mt-1"></i>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 truncate">Thomas Mitchell's Journey</p>
+                                <p class="text-xs text-gray-500">Cork, Ireland → Boston, MA</p>
+                                <p class="text-xs text-gray-400 mt-1">Generated 2 hours ago</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-lg p-3 cursor-pointer hover:bg-gray-100 transition-colors" data-mock="true">
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-users text-heritage-500 mt-1"></i>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 truncate">The Smith Family Settlement</p>
+                                <p class="text-xs text-gray-500">Pennsylvania Farmlands</p>
+                                <p class="text-xs text-gray-400 mt-1">Generated 1 day ago</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- @END_MAP )) -->
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: Sidebar -->
+
+        <!-- @COMPONENT: MainContent -->
+        <div class="flex-1 flex flex-col">
+            <!-- Map Container -->
+            <div class="flex-1 relative">
+                <div id="map" class="w-full h-full" data-implementation="Leaflet map with geopackage layer support"></div>
+                
+                <!-- Map Controls -->
+                <div class="absolute top-4 right-4 space-y-2">
+                    <button class="bg-white hover:bg-gray-50 shadow-lg rounded-lg p-2 text-gray-600 hover:text-heritage-600 transition-colors" title="Zoom to fit all locations" data-event="click:zoomToFit">
+                        <i class="fas fa-expand-arrows-alt"></i>
+                    </button>
+                    <button class="bg-white hover:bg-gray-50 shadow-lg rounded-lg p-2 text-gray-600 hover:text-heritage-600 transition-colors" title="Toggle fullscreen" data-event="click:toggleFullscreen">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                    <button class="bg-white hover:bg-gray-50 shadow-lg rounded-lg p-2 text-gray-600 hover:text-heritage-600 transition-colors" title="Export map view" data-event="click:exportMapView">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                </div>
+
+                <!-- Timeline Scrubber -->
+                <div class="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg p-4 shadow-lg">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm font-medium text-heritage-800 min-w-0">Timeline:</span>
+                        <div class="flex-1">
+                            <input type="range" min="1840" max="2024" value="1920" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" data-implementation="Timeline scrubber to filter map by date range">
+                        </div>
+                        <div class="flex space-x-2 text-sm text-gray-600">
+                            <span id="timeline-start" data-bind="timeline.startYear">1847</span>
+                            <span>-</span>
+                            <span id="timeline-end" data-bind="timeline.endYear">2024</span>
+                        </div>
+                        <button class="bg-heritage-500 hover:bg-heritage-600 text-white px-3 py-1 rounded text-sm transition-colors" data-event="click:playTimeline">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Location Info Panel -->
+                <div class="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-4 max-w-sm hidden" id="location-info-panel" data-implementation="Show/hide based on map marker selection">
+                    <div class="flex items-start justify-between mb-3">
+                        <h3 class="font-serif font-semibold text-heritage-800" data-bind="selectedLocation.name">Boston, Massachusetts</h3>
+                        <button class="text-gray-400 hover:text-gray-600" data-event="click:closeLocationPanel">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Family Members:</span>
+                            <span class="font-medium" data-bind="selectedLocation.memberCount">12</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Time Period:</span>
+                            <span class="font-medium" data-bind="selectedLocation.timePeriod">1889-1942</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Events:</span>
+                            <span class="font-medium" data-bind="selectedLocation.eventCount">23</span>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-gray-200">
+                        <p class="text-xs text-gray-600 leading-relaxed" data-bind="selectedLocation.description">The Mitchell and O'Brien families settled in Boston's North End, where Thomas worked as a dock worker and Mary established a boarding house...</p>
+                    </div>
+                    <div class="mt-3 flex space-x-2">
+                        <button class="bg-heritage-500 hover:bg-heritage-600 text-white px-3 py-1 rounded text-xs transition-colors" data-event="click:viewLocationStories">
+                            View Stories
+                        </button>
+                        <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs transition-colors" data-event="click:editLocationNotes">
+                            Edit Notes
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Panel - Story Preview -->
+            <div class="h-48 bg-white border-t border-gray-200 p-6 overflow-hidden">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-serif font-semibold text-heritage-800">Featured Story</h3>
+                    <div class="flex space-x-2">
+                        <button class="text-gray-400 hover:text-heritage-600 transition-colors" data-event="click:previousStory">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="text-gray-400 hover:text-heritage-600 transition-colors" data-event="click:nextStory">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <button class="bg-heritage-500 hover:bg-heritage-600 text-white px-3 py-1 rounded text-sm transition-colors ml-4" data-event="click:expandStoryView">
+                            View All Stories
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-32">
+                    <div class="space-y-2">
+                        <h4 class="font-serif font-semibold text-heritage-700" data-bind="featuredStory.title">The Great Migration of 1889</h4>
+                        <p class="text-sm text-gray-600 leading-relaxed overflow-hidden" data-bind="featuredStory.content">When Thomas Mitchell left the rolling hills of County Cork in 1889, he carried with him little more than hope and a letter from his cousin Patrick, who had written from Boston about opportunities in the bustling harbor district. The journey across the Atlantic took three weeks aboard the steamship Celtic, and Thomas kept a detailed journal of his experiences, describing the cramped quarters below deck and the anticipation that grew stronger each day as they approached the American coast...</p>
+                    </div>
+                    <div class="flex items-center justify-center bg-gray-50 rounded-lg">
+                        <!-- Historical map or family photo related to story -->
+                        <!-- A vintage sepia-toned photograph of Irish immigrants on a ship deck looking toward the horizon -->
+                        <img src="https://pixabay.com/get/g9ebc4d17098837fcba7dc62b50653eb11d14b330c839f1c784185a3825ef77cabe56719b4f7b43ce561682c25c480472a6e45d3542a18f2ecac747287ac5a0f5_1280.jpg" alt="Historical ship voyage scene" class="rounded object-cover w-full h-32" data-implementation="Replace with story-specific historical images or family photos" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: MainContent -->
+    </div>
+
+    <!-- @COMPONENT: FloatingActionButton -->
+    <div class="fixed bottom-6 right-6 space-y-3">
+        <button class="bg-vintage-500 hover:bg-vintage-600 text-white w-12 h-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center" title="Generate PDF Atlas" data-event="click:generatePDFAtlas">
+            <i class="fas fa-file-pdf text-lg"></i>
+        </button>
+        <button class="bg-heritage-500 hover:bg-heritage-600 text-white w-12 h-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center" title="Add Family Member" data-event="click:addFamilyMember">
+            <i class="fas fa-plus text-lg"></i>
+        </button>
+    </div>
+    <!-- @END_COMPONENT: FloatingActionButton -->
+
+    <!-- @COMPONENT: PDFPreviewModal -->
+    <div id="pdf-preview-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden" data-implementation="Show/hide based on PDF generation trigger">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl h-full max-h-[90vh] m-4 flex flex-col">
+            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                <h2 class="text-xl font-serif font-semibold text-heritage-800">Family Atlas Preview</h2>
+                <div class="flex items-center space-x-4">
+                    <button class="bg-heritage-500 hover:bg-heritage-600 text-white px-4 py-2 rounded-lg transition-colors" data-event="click:downloadPDF">
+                        <i class="fas fa-download mr-2"></i>Download PDF
+                    </button>
+                    <button class="text-gray-400 hover:text-gray-600" data-event="click:closePDFPreview">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 p-6 overflow-y-auto">
+                <div class="space-y-6">
+                    <!-- PDF Page Previews -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gray-50 rounded-lg p-4 aspect-[8.5/11]">
+                            <div class="bg-white shadow-sm rounded border h-full p-6 flex flex-col items-center justify-center">
+                                <h3 class="text-2xl font-serif font-bold text-heritage-800 mb-2">The Mitchell Family Atlas</h3>
+                                <p class="text-heritage-600 mb-4">A Journey Through Time and Place</p>
+                                <div class="w-24 h-24 bg-heritage-100 rounded-full flex items-center justify-center mb-4">
+                                    <i class="fas fa-family text-heritage-500 text-2xl"></i>
+                                </div>
+                                <p class="text-sm text-gray-600 text-center">Compiled from family records and memories<br/>1847 - 2024</p>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4 aspect-[8.5/11]">
+                            <div class="bg-white shadow-sm rounded border h-full p-4">
+                                <h4 class="font-serif font-semibold text-heritage-800 mb-3">Migration Map</h4>
+                                <div class="bg-heritage-50 rounded h-32 mb-3 flex items-center justify-center">
+                                    <i class="fas fa-map text-heritage-300 text-3xl"></i>
+                                </div>
+                                <div class="space-y-2 text-xs text-gray-600">
+                                    <p><strong>Cork, Ireland</strong> - Birthplace of Thomas Mitchell (1847)</p>
+                                    <p><strong>Boston, MA</strong> - Immigration and settlement (1889)</p>
+                                    <p><strong>Chicago, IL</strong> - Westward expansion (1902)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center text-sm text-gray-500">
+                        <p>Preview showing 2 of 28 pages - Full atlas includes family tree, location details, photo galleries, and complete migration timeline</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: PDFPreviewModal -->
+
+    <script>
+        (function() {
+            // Initialize Leaflet map
+            // TODO: Implement proper geocoding service integration
+            const map = L.map('map').setView([42.3601, -71.0589], 6);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Mock family location markers
+            const familyLocations = [
+                {lat: 51.8985, lng: -8.4756, name: "Cork, Ireland", members: 8, period: "1847-1889"},
+                {lat: 42.3601, lng: -71.0589, name: "Boston, MA", members: 12, period: "1889-1942"},
+                {lat: 41.8781, lng: -87.6298, name: "Chicago, IL", members: 15, period: "1902-1967"}
+            ];
+
+            familyLocations.forEach(location => {
+                const marker = L.marker([location.lat, location.lng]).addTo(map);
+                marker.bindPopup(`
+                    <div class="p-2">
+                        <h3 class="font-serif font-semibold">${location.name}</h3>
+                        <p class="text-sm text-gray-600">${location.members} family members</p>
+                        <p class="text-sm text-gray-600">${location.period}</p>
+                    </div>
+                `);
+            });
+
+            // Migration path visualization
+            const migrationPath = [
+                [51.8985, -8.4756], // Cork
+                [42.3601, -71.0589], // Boston
+                [41.8781, -87.6298]  // Chicago
+            ];
+
+            L.polyline(migrationPath, {
+                color: '#2C5530',
+                weight: 3,
+                opacity: 0.7,
+                dashArray: '10, 5'
+            }).addTo(map);
+
+            // Timeline scrubber functionality
+            const timelineSlider = document.querySelector('input[type="range"]');
+            const timelineStart = document.getElementById('timeline-start');
+            const timelineEnd = document.getElementById('timeline-end');
+
+            timelineSlider.addEventListener('input', function() {
+                const currentYear = this.value;
+                // TODO: Filter map markers and data based on selected year
+                console.log('Timeline updated to:', currentYear);
+            });
+
+            // Modal controls
+            const pdfModal = document.getElementById('pdf-preview-modal');
+            
+            document.querySelector('[data-event="click:generatePDFAtlas"]').addEventListener('click', function() {
+                pdfModal.classList.remove('hidden');
+                // TODO: Generate PDF preview with current map state and family data
+            });
+
+            document.querySelector('[data-event="click:closePDFPreview"]').addEventListener('click', function() {
+                pdfModal.classList.add('hidden');
+            });
+
+            // File upload handling
+            document.querySelectorAll('[data-implementation*="File upload"]').forEach(element => {
+                element.addEventListener('click', function() {
+                    // TODO: Implement file upload with GEDCOM/CSV validation
+                    console.log('File upload triggered');
+                });
+            });
+
+            // Layer toggle functionality
+            document.querySelectorAll('input[data-layer]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const layerName = this.dataset.layer;
+                    // TODO: Show/hide map layers based on checkbox state
+                    console.log(`Layer ${layerName} ${this.checked ? 'enabled' : 'disabled'}`);
+                });
+            });
+
+            // Map controls
+            document.querySelector('[data-event="click:zoomToFit"]').addEventListener('click', function() {
+                const group = new L.featureGroup(familyLocations.map(loc => L.marker([loc.lat, loc.lng])));
+                map.fitBounds(group.getBounds().pad(0.1));
+            });
+
+            // Story navigation
+            document.querySelector('[data-event="click:nextStory"]').addEventListener('click', function() {
+                // TODO: Load next story in rotation
+                console.log('Next story requested');
+            });
+
+            document.querySelector('[data-event="click:previousStory"]').addEventListener('click', function() {
+                // TODO: Load previous story in rotation
+                console.log('Previous story requested');
+            });
+        })();
+    </script>
+</body>
+</html>

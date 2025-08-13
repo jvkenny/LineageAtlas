@@ -1,0 +1,446 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legacy Atlas Studio - Family History Mapping</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'heritage-green': '#2C5530',
+                        'heritage-brown': '#8B4513',
+                        'heritage-tan': '#D4A574',
+                        'heritage-cream': '#F7F5F3',
+                        'heritage-charcoal': '#4A4A4A'
+                    },
+                    fontFamily: {
+                        'display': ['Playfair Display', 'serif'],
+                        'body': ['Inter', 'sans-serif'],
+                        'mono': ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .leaflet-container {
+            font-family: 'Inter', sans-serif;
+        }
+        .scroll-shadow {
+            background: linear-gradient(heritage-cream 30%, rgba(247,245,243,0)),
+                        linear-gradient(rgba(247,245,243,0), heritage-cream 70%) 0 100%,
+                        radial-gradient(farthest-side at 50% 0, rgba(0,0,0,.2), rgba(0,0,0,0)),
+                        radial-gradient(farthest-side at 50% 100%, rgba(0,0,0,.2), rgba(0,0,0,0)) 0 100%;
+            background-repeat: no-repeat;
+            background-size: 100% 40px, 100% 40px, 100% 14px, 100% 14px;
+            background-attachment: local, local, scroll, scroll;
+        }
+    </style>
+</head>
+<body class="bg-heritage-cream font-body">
+    <!-- @COMPONENT: AppHeader [navigation and branding] -->
+    <header class="bg-white shadow-sm border-b border-heritage-tan/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-heritage-green rounded-lg flex items-center justify-center">
+                        <i class="fas fa-map-marked-alt text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-display font-semibold text-xl text-heritage-charcoal">Legacy Atlas Studio</h1>
+                        <p class="text-xs text-heritage-charcoal/60">Family History Mapping</p>
+                    </div>
+                </div>
+                <nav class="hidden md:flex items-center space-x-6">
+                    <button class="text-heritage-charcoal hover:text-heritage-green transition-colors flex items-center space-x-2">
+                        <i class="fas fa-upload text-sm"></i>
+                        <span>Import Data</span>
+                    </button>
+                    <button class="text-heritage-charcoal hover:text-heritage-green transition-colors flex items-center space-x-2">
+                        <i class="fas fa-download text-sm"></i>
+                        <span>Export Atlas</span>
+                    </button>
+                    <div class="w-8 h-8 bg-heritage-tan rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-heritage-charcoal text-sm"></i>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    </header>
+    <!-- @END_COMPONENT: AppHeader -->
+
+    <div class="flex h-screen">
+        <!-- @COMPONENT: Sidebar [navigation and controls] -->
+        <aside class="w-80 bg-white border-r border-heritage-tan/20 flex flex-col">
+            <!-- Navigation Tabs -->
+            <div class="border-b border-heritage-tan/20">
+                <nav class="flex">
+                    <button class="flex-1 px-4 py-3 text-sm font-medium text-heritage-green border-b-2 border-heritage-green bg-heritage-green/5">
+                        <i class="fas fa-map-marked-alt mr-2"></i>
+                        Map View
+                    </button>
+                    <button class="flex-1 px-4 py-3 text-sm font-medium text-heritage-charcoal/60 hover:text-heritage-charcoal hover:bg-heritage-cream/50 transition-all">
+                        <i class="fas fa-sitemap mr-2"></i>
+                        Family Tree
+                    </button>
+                    <button class="flex-1 px-4 py-3 text-sm font-medium text-heritage-charcoal/60 hover:text-heritage-charcoal hover:bg-heritage-cream/50 transition-all">
+                        <i class="fas fa-clock mr-2"></i>
+                        Timeline
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Content Area -->
+            <div class="flex-1 overflow-y-auto scroll-shadow">
+                <!-- Import Section -->
+                <div class="p-4 border-b border-heritage-tan/10">
+                    <h3 class="font-display font-semibold text-heritage-charcoal mb-3">Import Family Data</h3>
+                    <div class="space-y-3">
+                        <!-- @FUNCTIONALITY: File upload for GEDCOM and CSV files -->
+                        <div data-mock="true" class="border-2 border-dashed border-heritage-tan rounded-lg p-4 text-center hover:border-heritage-green transition-colors cursor-pointer">
+                            <i class="fas fa-file-upload text-heritage-tan text-2xl mb-2"></i>
+                            <p class="text-sm text-heritage-charcoal">Drop GEDCOM or CSV files here</p>
+                            <p class="text-xs text-heritage-charcoal/60 mt-1">or click to browse</p>
+                        </div>
+                        <button class="w-full bg-heritage-green text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-heritage-green/90 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>
+                            Add Family Member
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Family Members List -->
+                <div class="p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-display font-semibold text-heritage-charcoal">Family Members</h3>
+                        <span class="text-xs bg-heritage-tan/20 text-heritage-charcoal px-2 py-1 rounded-full" data-bind="familyMembers.length">12</span>
+                    </div>
+                    
+                    <!-- Search -->
+                    <div class="relative mb-4">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-heritage-charcoal/40 text-sm"></i>
+                        <input type="text" placeholder="Search family members..." class="w-full pl-10 pr-4 py-2 border border-heritage-tan/30 rounded-lg text-sm focus:ring-2 focus:ring-heritage-green/20 focus:border-heritage-green">
+                    </div>
+
+                    <!-- @MAP: familyMembers.map(member => ( -->
+                    <div class="space-y-2">
+                        <div data-mock="true" class="p-3 bg-heritage-cream/30 rounded-lg border border-heritage-tan/20 hover:shadow-sm transition-shadow cursor-pointer">
+                            <div class="flex items-start space-x-3">
+                                <!-- A elderly woman's portrait photo in sepia tones -->
+                                <img src="https://images.unsplash.com/photo-1506863530036-1efeddceb993?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=60&h=60" 
+                                     alt="Portrait of elderly woman" 
+                                     class="w-10 h-10 rounded-full object-cover border-2 border-heritage-tan/30">
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="font-medium text-heritage-charcoal text-sm" data-bind="member.name">Margaret O'Sullivan</h4>
+                                    <p class="text-xs text-heritage-charcoal/60" data-bind="member.dates">1892 - 1978</p>
+                                    <p class="text-xs text-heritage-charcoal/60" data-bind="member.location">County Cork, Ireland</p>
+                                    <div class="flex items-center mt-1 space-x-2">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-heritage-green/10 text-heritage-green">
+                                            <i class="fas fa-map-pin mr-1 text-xs"></i>
+                                            Mapped
+                                        </span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-heritage-brown/10 text-heritage-brown">
+                                            <i class="fas fa-image mr-1 text-xs"></i>
+                                            3 photos
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div data-mock="true" class="p-3 bg-white rounded-lg border border-heritage-tan/20 hover:shadow-sm transition-shadow cursor-pointer">
+                            <div class="flex items-start space-x-3">
+                                <!-- A middle-aged man in work clothes from early 1900s -->
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=60&h=60" 
+                                     alt="Portrait of middle-aged man" 
+                                     class="w-10 h-10 rounded-full object-cover border-2 border-heritage-tan/30">
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="font-medium text-heritage-charcoal text-sm" data-bind="member.name">Thomas Sullivan</h4>
+                                    <p class="text-xs text-heritage-charcoal/60" data-bind="member.dates">1888 - 1965</p>
+                                    <p class="text-xs text-heritage-charcoal/60" data-bind="member.location">Boston, Massachusetts</p>
+                                    <div class="flex items-center mt-1 space-x-2">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-heritage-green/10 text-heritage-green">
+                                            <i class="fas fa-map-pin mr-1 text-xs"></i>
+                                            Mapped
+                                        </span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-heritage-tan/20 text-heritage-charcoal/60">
+                                            <i class="fas fa-microphone mr-1 text-xs"></i>
+                                            Audio story
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div data-mock="true" class="p-3 bg-white rounded-lg border border-heritage-tan/20 hover:shadow-sm transition-shadow cursor-pointer">
+                            <div class="flex items-start space-x-3">
+                                <!-- A young woman from the 1920s era -->
+                                <img src="https://pixabay.com/get/gd5ec72350e004f26df277c2c80a21d684fc9391752639ab9a43dc514df2ee55d29275619cec067c34a62ca44e840240f1d91174fd1367516a0632cb07ba7583c_1280.jpg" 
+                                     alt="Portrait of young woman" 
+                                     class="w-10 h-10 rounded-full object-cover border-2 border-heritage-tan/30">
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="font-medium text-heritage-charcoal text-sm" data-bind="member.name">Catherine Sullivan</h4>
+                                    <p class="text-xs text-heritage-charcoal/60" data-bind="member.dates">1920 - 2002</p>
+                                    <p class="text-xs text-heritage-charcoal/60" data-bind="member.location">Chicago, Illinois</p>
+                                    <div class="flex items-center mt-1 space-x-2">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-heritage-green/10 text-heritage-green">
+                                            <i class="fas fa-map-pin mr-1 text-xs"></i>
+                                            Mapped
+                                        </span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-heritage-brown/10 text-heritage-brown">
+                                            <i class="fas fa-image mr-1 text-xs"></i>
+                                            7 photos
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- @END_MAP -->
+                </div>
+
+                <!-- Export Section -->
+                <div class="p-4 border-t border-heritage-tan/10">
+                    <h3 class="font-display font-semibold text-heritage-charcoal mb-3">Export Atlas</h3>
+                    <div class="space-y-3">
+                        <div class="bg-gradient-to-r from-heritage-green/5 to-heritage-tan/5 p-4 rounded-lg border border-heritage-tan/20">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <i class="fas fa-book text-heritage-green"></i>
+                                <h4 class="font-medium text-heritage-charcoal text-sm">Family Atlas PDF</h4>
+                            </div>
+                            <p class="text-xs text-heritage-charcoal/60 mb-3">32-page heirloom book with maps, timeline, and stories</p>
+                            <button class="w-full bg-heritage-green text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-heritage-green/90 transition-colors">
+                                <i class="fas fa-download mr-2"></i>
+                                Generate PDF Atlas
+                            </button>
+                        </div>
+                        
+                        <button class="w-full border border-heritage-tan/30 text-heritage-charcoal py-2 px-4 rounded-lg text-sm font-medium hover:bg-heritage-cream/50 transition-colors">
+                            <i class="fas fa-share-alt mr-2"></i>
+                            Share Family Map
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        <!-- @END_COMPONENT: Sidebar -->
+
+        <!-- @COMPONENT: MainContent [map and visualization area] -->
+        <main class="flex-1 relative">
+            <!-- @FUNCTIONALITY: Interactive map using Leaflet showing family migration paths and locations -->
+            <div id="map" class="w-full h-full" data-implementation="Implement Leaflet map with custom markers for family locations"></div>
+            
+            <!-- Map Controls -->
+            <div class="absolute top-4 right-4 bg-white rounded-lg shadow-lg border border-heritage-tan/20 overflow-hidden">
+                <button class="block w-full px-4 py-2 text-sm text-heritage-charcoal hover:bg-heritage-cream/50 transition-colors border-b border-heritage-tan/10">
+                    <i class="fas fa-route mr-2 text-heritage-green"></i>
+                    Show Migration Paths
+                </button>
+                <button class="block w-full px-4 py-2 text-sm text-heritage-charcoal hover:bg-heritage-cream/50 transition-colors border-b border-heritage-tan/10">
+                    <i class="fas fa-layer-group mr-2 text-heritage-brown"></i>
+                    Historical Layers
+                </button>
+                <button class="block w-full px-4 py-2 text-sm text-heritage-charcoal hover:bg-heritage-cream/50 transition-colors">
+                    <i class="fas fa-camera mr-2 text-heritage-tan"></i>
+                    Capture View
+                </button>
+            </div>
+
+            <!-- Family Story Panel -->
+            <div class="absolute bottom-4 left-4 right-4 bg-white rounded-lg shadow-lg border border-heritage-tan/20 max-w-md">
+                <div class="p-4">
+                    <div class="flex items-start space-x-3">
+                        <!-- Historical document or letter background -->
+                        <img src="https://images.unsplash.com/photo-1506863530036-1efeddceb993?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=48&h=48" 
+                             alt="Family member portrait" 
+                             class="w-12 h-12 rounded-full object-cover border-2 border-heritage-tan/30 flex-shrink-0">
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-display font-semibold text-heritage-charcoal mb-1" data-bind="selectedMember.name">Margaret O'Sullivan</h4>
+                            <p class="text-sm text-heritage-charcoal/80 leading-relaxed" data-bind="selectedMember.story">
+                                Born in County Cork, Ireland in 1892, Margaret left her homeland at age 23 seeking new opportunities in America. 
+                                She arrived at Ellis Island in 1915 with little more than hope and determination...
+                            </p>
+                            <div class="flex items-center mt-3 space-x-4">
+                                <span class="text-xs text-heritage-charcoal/60">
+                                    <i class="fas fa-map-marker-alt mr-1"></i>
+                                    County Cork, Ireland → Boston, MA
+                                </span>
+                                <button class="text-xs text-heritage-green hover:text-heritage-green/80 transition-colors">
+                                    <i class="fas fa-volume-up mr-1"></i>
+                                    Play Audio
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Indicator (hidden by default) -->
+            <div class="absolute inset-0 bg-white/80 backdrop-blur-sm hidden items-center justify-center" data-state="loading">
+                <div class="text-center">
+                    <div class="w-12 h-12 border-4 border-heritage-green/20 border-t-heritage-green rounded-full animate-spin mx-auto mb-4"></div>
+                    <p class="text-heritage-charcoal font-medium">Mapping your family history...</p>
+                    <p class="text-heritage-charcoal/60 text-sm mt-1">Geocoding locations and generating stories</p>
+                </div>
+            </div>
+        </main>
+        <!-- @END_COMPONENT: MainContent -->
+    </div>
+
+    <!-- @COMPONENT: Modal [for detailed family member editing] -->
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50" data-state="modal-hidden">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
+            <div class="flex items-center justify-between p-6 border-b border-heritage-tan/20">
+                <h2 class="font-display font-semibold text-xl text-heritage-charcoal">Family Member Details</h2>
+                <button class="text-heritage-charcoal/60 hover:text-heritage-charcoal transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-heritage-charcoal mb-2">Full Name</label>
+                        <input type="text" data-bind="selectedMember.fullName" placeholder="Margaret O'Sullivan" class="w-full px-3 py-2 border border-heritage-tan/30 rounded-lg focus:ring-2 focus:ring-heritage-green/20 focus:border-heritage-green">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-heritage-charcoal mb-2">Birth Date</label>
+                        <input type="date" data-bind="selectedMember.birthDate" class="w-full px-3 py-2 border border-heritage-tan/30 rounded-lg focus:ring-2 focus:ring-heritage-green/20 focus:border-heritage-green">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-heritage-charcoal mb-2">Birth Location</label>
+                        <input type="text" data-bind="selectedMember.birthLocation" placeholder="County Cork, Ireland" class="w-full px-3 py-2 border border-heritage-tan/30 rounded-lg focus:ring-2 focus:ring-heritage-green/20 focus:border-heritage-green">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-heritage-charcoal mb-2">Death Date</label>
+                        <input type="date" data-bind="selectedMember.deathDate" class="w-full px-3 py-2 border border-heritage-tan/30 rounded-lg focus:ring-2 focus:ring-heritage-green/20 focus:border-heritage-green">
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <label class="block text-sm font-medium text-heritage-charcoal mb-2">Life Story & Notes</label>
+                    <textarea data-bind="selectedMember.story" rows="4" placeholder="Enter notes about this family member's life, achievements, and stories..." class="w-full px-3 py-2 border border-heritage-tan/30 rounded-lg focus:ring-2 focus:ring-heritage-green/20 focus:border-heritage-green resize-none"></textarea>
+                </div>
+                
+                <div class="mt-6">
+                    <label class="block text-sm font-medium text-heritage-charcoal mb-2">Photos</label>
+                    <div class="border-2 border-dashed border-heritage-tan rounded-lg p-6 text-center">
+                        <i class="fas fa-images text-heritage-tan text-3xl mb-2"></i>
+                        <p class="text-heritage-charcoal/60">Drop photos here or click to upload</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-end space-x-3 p-6 border-t border-heritage-tan/20 bg-heritage-cream/20">
+                <button class="px-4 py-2 text-heritage-charcoal hover:bg-heritage-cream/50 rounded-lg transition-colors">Cancel</button>
+                <button class="px-4 py-2 bg-heritage-green text-white rounded-lg hover:bg-heritage-green/90 transition-colors">Save Changes</button>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: Modal -->
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        (function() {
+            // Initialize map
+            const map = L.map('map').setView([42.3601, -71.0589], 6); // Boston area
+            
+            // Add tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            // Sample family locations with custom markers
+            const familyLocations = [
+                {
+                    name: "Margaret O'Sullivan",
+                    coords: [51.8985, -8.4756], // Cork, Ireland
+                    location: "County Cork, Ireland",
+                    dates: "1892-1915",
+                    type: "birth"
+                },
+                {
+                    name: "Margaret O'Sullivan",
+                    coords: [42.3601, -71.0589], // Boston
+                    location: "Boston, Massachusetts",
+                    dates: "1915-1978",
+                    type: "residence"
+                },
+                {
+                    name: "Thomas Sullivan",
+                    coords: [42.3601, -71.0589], // Boston
+                    location: "Boston, Massachusetts", 
+                    dates: "1888-1965",
+                    type: "birth"
+                },
+                {
+                    name: "Catherine Sullivan",
+                    coords: [41.8781, -87.6298], // Chicago
+                    location: "Chicago, Illinois",
+                    dates: "1920-2002",
+                    type: "residence"
+                }
+            ];
+            
+            // Create custom icons
+            const birthIcon = L.divIcon({
+                className: 'custom-marker',
+                html: '<div style="background: #2C5530; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+            
+            const residenceIcon = L.divIcon({
+                className: 'custom-marker',
+                html: '<div style="background: #8B4513; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+            
+            // Add markers to map
+            familyLocations.forEach(location => {
+                const icon = location.type === 'birth' ? birthIcon : residenceIcon;
+                const marker = L.marker(location.coords, {icon: icon}).addTo(map);
+                
+                marker.bindPopup(`
+                    <div class="font-body">
+                        <h3 class="font-semibold text-heritage-charcoal">${location.name}</h3>
+                        <p class="text-sm text-heritage-charcoal/80">${location.location}</p>
+                        <p class="text-xs text-heritage-charcoal/60">${location.dates}</p>
+                        <p class="text-xs mt-1 capitalize">${location.type}</p>
+                    </div>
+                `);
+            });
+            
+            // Add migration path
+            const migrationPath = [
+                [51.8985, -8.4756], // Cork, Ireland
+                [42.3601, -71.0589], // Boston
+                [41.8781, -87.6298]  // Chicago
+            ];
+            
+            L.polyline(migrationPath, {
+                color: '#D4A574',
+                weight: 3,
+                opacity: 0.7,
+                dashArray: '10, 5'
+            }).addTo(map);
+            
+            // TODO: Implement business logic for:
+            // - GEDCOM file parsing
+            // - Geocoding service integration
+            // - PDF generation
+            // - Family tree visualization
+            // - Audio recording and transcription
+        })();
+    </script>
+</body>
+</html>
